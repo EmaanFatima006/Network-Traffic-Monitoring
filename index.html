@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NetWatch — Traffic Monitor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600&family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ░░ HEADER BAR ░░ -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon">◈</span>
+      <span class="brand-name">E<span class="accent">NETWORKS </span></span>
+      <span class="brand-sub">Traffic Analysis Platform v1.0</span>
+    </div>
+    <div class="topbar-right">
+      <div class="status-pill" id="statusPill">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">IDLE</span>
+      </div>
+      <div class="topbar-time" id="clockDisplay">00:00:00</div>
+    </div>
+  </header>
+
+  <!-- ░░ MAIN LAYOUT ░░ -->
+  <div class="shell">
+
+    <!-- ── SIDEBAR ─────────────────────────────── -->
+    <aside class="sidebar">
+
+      <!-- Controls -->
+      <section class="side-block controls-block">
+        <div class="side-label">⬡ MONITOR CONTROL</div>
+        <button class="btn-start" id="btnStart" onclick="startMonitoring()">
+          <span class="btn-icon">▶</span> START
+        </button>
+        <button class="btn-stop" id="btnStop" onclick="stopMonitoring()" disabled>
+          <span class="btn-icon">■</span> STOP
+        </button>
+        <div class="session-info">
+          <div class="si-row"><span>Session</span><span id="siSession">—</span></div>
+          <div class="si-row"><span>Elapsed</span><span id="siElapsed">00:00</span></div>
+          <div class="si-row"><span>Captured</span><span id="siCaptured">0</span></div>
+        </div>
+      </section>
+
+      <!-- Filters -->
+      <section class="side-block filter-block">
+        <div class="side-label">⬡ FILTER ENGINE</div>
+
+        <label class="field-label">Protocol</label>
+        <select id="filterProto" class="inp-field">
+          <option value="">All Protocols</option>
+          <option value="TCP">TCP</option>
+          <option value="UDP">UDP</option>
+          <option value="ICMP">ICMP</option>
+        </select>
+
+        <label class="field-label">Source IP</label>
+        <input type="text" id="filterSrc" class="inp-field" placeholder="e.g. 192.168.1.5" />
+
+        <label class="field-label">Destination IP</label>
+        <input type="text" id="filterDst" class="inp-field" placeholder="e.g. 8.8.8.8" />
+
+        <div class="filter-btns">
+          <button class="btn-filter" onclick="applyFilter()">⊞ Apply</button>
+          <button class="btn-reset"  onclick="resetFilter()">↺ Reset</button>
+        </div>
+
+        <div class="filter-result" id="filterResult"></div>
+      </section>
+
+      <!-- Stats panel -->
+      <section class="side-block stats-block">
+        <div class="side-label">⬡ STATISTICS</div>
+        <div class="stat-card">
+          <div class="stat-val" id="statTotal">0</div>
+          <div class="stat-key">Total Packets</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="statAvgSize">0 B</div>
+          <div class="stat-key">Avg Packet Size</div>
+        </div>
+        <div class="proto-breakdown">
+          <div class="pb-row">
+            <span class="badge badge-tcp">TCP</span>
+            <div class="pb-bar-wrap"><div class="pb-bar" id="barTCP"></div></div>
+            <span class="pb-count" id="cntTCP">0</span>
+          </div>
+          <div class="pb-row">
+            <span class="badge badge-udp">UDP</span>
+            <div class="pb-bar-wrap"><div class="pb-bar" id="barUDP"></div></div>
+            <span class="pb-count" id="cntUDP">0</span>
+          </div>
+          <div class="pb-row">
+            <span class="badge badge-icmp">ICMP</span>
+            <div class="pb-bar-wrap"><div class="pb-bar" id="barICMP"></div></div>
+            <span class="pb-count" id="cntICMP">0</span>
+          </div>
+        </div>
+      </section>
+
+    </aside>
+
+    <!-- ── MAIN CONTENT ──────────────────────────── -->
+    <main class="content-area">
+
+      <!-- Packet Table -->
+      <section class="panel table-panel">
+        <div class="panel-head">
+          <span class="panel-title">▣ PACKET STREAM</span>
+          <span class="pkt-counter" id="pktCounter">0 records</span>
+        </div>
+        <div class="table-wrap">
+          <table id="packetTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Time</th>
+                <th>Source IP</th>
+                <th>Destination IP</th>
+                <th>Protocol</th>
+                <th>Src Port</th>
+                <th>Dst Port</th>
+                <th>Service</th>
+                <th>Size</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr class="empty-row">
+                <td colspan="9">
+                  <div class="empty-state">
+                    <span class="empty-icon">◌</span>
+                    <span>Press START to begin monitoring</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Log Output -->
+      <section class="panel log-panel">
+        <div class="panel-head">
+          <span class="panel-title">▣ SYSTEM LOGS</span>
+          <button class="btn-clear-log" onclick="clearLog()">✕ Clear</button>
+        </div>
+        <div class="log-box" id="logBox">
+          <div class="log-entry log-info">[ SYS ] ENETWORK initialized. Awaiting command.</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
